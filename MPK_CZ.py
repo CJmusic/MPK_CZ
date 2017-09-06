@@ -62,59 +62,56 @@ class MPK_CZ(ControlSurface):
             self.log("BEFORE mixer")
             self._setup_mixer_control()
             self._setup_device_control()
+            self._setup_session_control()
 
 
-            # self.clipcontrol(8)
+            
+    def _setup_session_control(self):
+        """SESSION ViEW"""
+        global session
+        session = SessionComponent(GRIDSIZE[0],GRIDSIZE[1])
+        session.name = 'Session_Control'
+        matrix = ButtonMatrixElement()
+        matrix.name = 'Button_Matrix'
+        up_button = ButtonElement(True, MIDI_CC_TYPE, CHANNEL, UP_BUTTON)
+        down_button = ButtonElement(True, MIDI_CC_TYPE, CHANNEL, DOWN_BUTTON)
+        left_button = ButtonElement(True, MIDI_CC_TYPE, CHANNEL, LEFT_BUTTON)
+        right_button = ButtonElement(True, MIDI_CC_TYPE, CHANNEL, RIGHT_BUTTON)
 
-            self.log("AFTER MIXER")
-            """SESSION ViEW"""
-            global session
-            session = SessionComponent(GRIDSIZE[0],GRIDSIZE[1])
-            session.name = 'Session_Control'
-            matrix = ButtonMatrixElement()
-            matrix.name = 'Button_Matrix'
-            up_button = ButtonElement(True, MIDI_CC_TYPE, CHANNEL, UP_BUTTON)
-            down_button = ButtonElement(True, MIDI_CC_TYPE, CHANNEL, DOWN_BUTTON)
-            left_button = ButtonElement(True, MIDI_CC_TYPE, CHANNEL, LEFT_BUTTON)
-            right_button = ButtonElement(True, MIDI_CC_TYPE, CHANNEL, RIGHT_BUTTON)
+        session_zoom = SessionZoomingComponent(session)
+        session_zoom.set_nav_buttons(up_button,down_button,left_button,right_button)
 
-            # session.set_scene_bank_buttons(down_button, up_button)
-            # session.set_track_bank_buttons(right_button, left_button)
-
-            session_zoom = SessionZoomingComponent(session)
-            session_zoom.set_nav_buttons(up_button,down_button,left_button,right_button)
-
-            session_stop_buttons = []
-            self.log("SETTING UP GRID")
-            for row in xrange(GRIDSIZE[1]):
-                button_row = []
-                self.log("CZ ROW")
-                self.log(str(row))
-                scene = session.scene(row)
-                scene.name = 'Scene_' + str(row)
-                scene.set_launch_button(ButtonElement(True, MIDI_NOTE_TYPE, CHANNEL, SCENE_BUTTONS[row]))
-                scene.set_triggered_value(2)
-
-                for column in xrange(GRIDSIZE[0]):
-                    self.log("CZ COLUMN")
-                    self.log(str(column))
-                    button = ConfigurableButtonElement(True, MIDI_NOTE_TYPE, CHANNEL, LAUNCH_BUTTONS[row][column])
-                    button.name = str(column) + '_Clip_' + str(row) + '_Button'
-                    button_row.append(button)
-                    clip_slot = scene.clip_slot(column)
-                    clip_slot.name = str(column) + '_Clip_Slot_' + str(row)
-                    clip_slot.set_launch_button(button)
-
-                matrix.add_row(tuple(button_row))
+        session_stop_buttons = []
+        self.log("SETTING UP GRID")
+        for row in xrange(GRIDSIZE[1]):
+            button_row = []
+            self.log("CZ ROW")
+            self.log(str(row))
+            scene = session.scene(row)
+            scene.name = 'Scene_' + str(row)
+            scene.set_launch_button(ButtonElement(True, MIDI_NOTE_TYPE, CHANNEL, SCENE_BUTTONS[row]))
+            scene.set_triggered_value(2)
 
             for column in xrange(GRIDSIZE[0]):
-                session_stop_buttons.append((ButtonElement(True, MIDI_NOTE_TYPE, CHANNEL, TRACK_STOPS[column])))
+                self.log("CZ COLUMN")
+                self.log(str(column))
+                button = ConfigurableButtonElement(True, MIDI_NOTE_TYPE, CHANNEL, LAUNCH_BUTTONS[row][column])
+                button.name = str(column) + '_Clip_' + str(row) + '_Button'
+                button_row.append(button)
+                clip_slot = scene.clip_slot(column)
+                clip_slot.name = str(column) + '_Clip_Slot_' + str(row)
+                clip_slot.set_launch_button(button)
 
-            self._suppress_session_highlight = False
-            self._suppress_send_midi = False
-            self.set_highlighting_session_component(session)
-            session.set_stop_track_clip_buttons(tuple(session_stop_buttons))
-            session.set_mixer(mixer)
+            matrix.add_row(tuple(button_row))
+
+        for column in xrange(GRIDSIZE[0]):
+            session_stop_buttons.append((ButtonElement(True, MIDI_NOTE_TYPE, CHANNEL, TRACK_STOPS[column])))
+
+        self._suppress_session_highlight = False
+        self._suppress_send_midi = False
+        self.set_highlighting_session_component(session)
+        session.set_stop_track_clip_buttons(tuple(session_stop_buttons))
+        session.set_mixer(mixer)
 
 
     def log(self, message):
@@ -128,11 +125,6 @@ class MPK_CZ(ControlSurface):
         mixer.set_track_offset(0) #Sets start point for mixer strip (offset from left)
         """set up the mixer buttons"""
         self.song().view.selected_track = mixer.channel_strip(0)._track
-        # mixer.set_master_volume_control(SliderElement(MIDI_CC_TYPE, CHANNEL, MASTER_VOLUME))
-        # master = mixer.master_strip()
-        # master.set_volume_control(SliderElement(MIDI_CC_TYPE, CHANNEL, MASTER_VOLUME))
-
-        # mixer.set_prehear_volume_control(SliderElement(MIDI_CC_TYPE, CHANNEL, PREHEAR))
         for index in xrange(GRIDSIZE[0]):
             mixer.channel_strip(index).set_volume_control(SliderElement(MIDI_CC_TYPE, CHANNEL, MIX_FADERS[index]))
             mixer.channel_strip(index).set_pan_control(SliderElement(MIDI_CC_TYPE, CHANNEL, PAN_CONTROLS[index]))
